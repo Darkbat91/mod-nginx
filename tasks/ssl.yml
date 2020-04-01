@@ -1,0 +1,106 @@
+- name: Nginx | Install | ssl packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ ssl_packages }}"
+
+- name: Nginx | Directories | Create Certbot dir
+  file:
+    path: '/usr/share/nginx/certbot'
+    state: directory
+    owner: '{{ flask_user }}'
+    group: '{{ flask_group }}'
+    mode: 0750
+  when: auto_renew
+
+- name: Nginx | Config | Copy Certbot config
+  copy:
+    src: etc_nginx_confd_certbot.conf
+    dest: /etc/nginx/conf.d/certbot.conf
+    owner: nginx
+    group: nginx
+    mode: '0640'
+  register: cerbot_status
+  when: auto_renew
+
+# Necessary here because we will need that config block soon
+- name: Nginx | Config | restart nginx 
+  service:
+    name: nginx
+    state: restarted
+  when: cerbot_status.changed 
+
+- name: Nginx | SSL | Certbot Configure SSL
+  shell: "certbot certonly --webroot -w /usr/share/nginx/certbot -m {{ certbot_email }} -d {{ external_DNS }} -n {% if testcert %}--test-cert{% endif %} --agree-tos"
+  args:
+    creates: "/etc/letsencrypt/live/{{ external_DNS }}/privkey.pem"
+    executable: bash
+  become: yes
+  notify: restart_nginx
+
+- name: Nginx | SELinux | Set relay for nginx
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+  when: set_relay
+
+# Doing it this way since certbot doesnt automatically generate on Manual
+- name: Nginx | Secrets | Generate DH params 
+  shell: "openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem {{ dh_bits }}"
+  args:
+      creates: "/etc/letsencrypt/ssl-dhparams.pem"
+      executable: bash
+  become: yes
+  notify: restart_nginx
+
+- name: Nginx | OSCP | Create ca dir
+  file:
+    path: '/etc/letsencrypt/ca'
+    state: directory
+
+
+# Get LetsEncrypt CAs https://letsencrypt.org/certificates/
+- name: Nginx | OSCP | Get CA
+  uri:
+    url: 'https://letsencrypt.org/certs/isrgrootx1.pem.txt'
+    method: GET
+    dest: /etc/letsencrypt/ca/ca.pem
+    creates: /etc/letsencrypt/ca/ca.pem
+
+- name: Nginx | OSCP | Get x3
+  uri:
+    url: 'https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt'
+    method: GET
+    dest: /etc/letsencrypt/ca/int.pem
+    creates: /etc/letsencrypt/ca/int.pem
+
+- name: Nginx | OSCP | Get x4
+  uri:
+    url: 'https://letsencrypt.org/certs/lets-encrypt-x4-cross-signed.pem.txt'
+    method: GET
+    dest: /etc/letsencrypt/ca/int_backup.pem
+    creates: /etc/letsencrypt/ca/int_backup.pem
+
+- name: Nginx | OSCP | Combine certs
+  assemble:
+    src: /etc/letsencrypt/ca
+    dest: /etc/letsencrypt/root_chain.pem
+    remote_src: yes
+
+- name: Nginx | Config | Copy Cert config
+  template:
+    src: etc_nginx_ssl.conf
+    dest: /etc/nginx/ssl.conf
+    owner: nginx
+    group: nginx
+    mode: '0640'
+  notify: restart_nginx
+
+- name: Nginx | Cron | Renew config twice daily
+  cron:
+    name: "certbot renew"
+    minute: "13"
+    hour: "0,12"
+    job: "certbot renew --webroot -w /usr/share/nginx/certbot --renew-hook 'systemctl reload nginx'"
+  when: auto_renew

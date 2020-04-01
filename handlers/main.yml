@@ -1,0 +1,5 @@
+- name: NGINX | Handler | restart
+  service:
+    name: nginx
+    state: restarted
+  listen: restart_nginx

@@ -1,0 +1,41 @@
+# Query the LetsEncrypt Dev servers instead for testing # NOTE: This will cause you to have to remove the lets encrypt directory due to a bug
+testcert: False
+
+# Path to the CA to validate nginx clients against on the nginx server
+client_PKI: 'NONE'
+
+# When set will register certbot configuration to nginx
+external_DNS: 'NONE'
+# Requires the certbot_email variable to be set as well
+
+# Enable TLS Support if the domain is specified
+TLS: True
+
+# diffie hellman bits to generate
+dh_bits: 2048
+
+# SSl support level Medium and High are options
+# taken from https://ssl-config.mozilla.org/#server=nginx&version=1.17.7&config=intermediate&openssl=1.1.1d&guideline=5.4
+ssl_support: Medium
+
+# Enables nginx to relay to localhost by default
+set_relay: True
+
+# DNS for OSCP
+dns_resolver: 9.9.9.9
+
+# Sets a cronjob and deploys the certbot renew commandblock
+auto_renew: True
+
+# Set up http redirect to https
+http_redirect: True
+
+web_root: /usr/share/nginx/html
+
+basic_packages:
+  - nginx
+
+ssl_packages:
+  - openssl
+  - certbot
+  

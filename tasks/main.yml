@@ -1,0 +1,69 @@
+# Trying to find a way to reliably reverse the DNS lookup some cloud providers do not publish the PTR record so this doesnt work
+# - name: Nginx | Check | get our PTR record
+#   uri:
+#     url: 'http://icanhazptr.com/'
+#     method: GET
+#     return_content: yes
+#   register: ptr
+
+# - debug:
+#     var: ptr.content
+
+- name: Nginx | Validate | Email for certbot registration
+  debug: 
+    msg: "certbot_email is required"
+  when: external_DNS != 'NONE' and TLS == True
+  failed_when: certbot_email is not defined
+
+- name: Nginx | Install | required packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ basic_packages }}"
+
+- name: Nginx | Config | Copy nginx.conf
+  copy:
+    src: etc_nginx_nginx.conf
+    dest: /etc/nginx/nginx.conf
+    owner: nginx
+    group: nginx
+    mode: '0640'
+  notify: restart_nginx
+
+- name: Nginx | Config | Copy security configuration
+  copy:
+    src: etc_nginx_confd_security.conf
+    dest: /etc/nginx/conf.d/security.conf
+    owner: nginx
+    group: nginx
+    mode: '0640'
+  notify: restart_nginx
+
+- name: Nginx | Config | Copy Http Redirect configuration
+  template:
+    src: etc_nginx_confd_httpredirect.conf
+    dest: /etc/nginx/conf.d/httpredirect.conf
+    owner: nginx
+    group: nginx
+    mode: '0640'
+  when: http_redirect == True
+  notify: restart_nginx
+
+- name: Nginx | Config | Copy client PKI config
+  template:
+    src: etc_nginx_confd_clientpki.conf
+    dest: /etc/nginx/conf.d/clientpki.conf
+    owner: nginx
+    group: nginx
+    mode: '0640'
+  notify: restart_nginx
+  when: client_PKI != 'NONE'
+
+- name: Nginx | Start | service
+  service:
+    name: nginx
+    state: started
+    enabled: true
+
+- include: ssl.yml
+  when: external_DNS != 'NONE' and TLS == True
