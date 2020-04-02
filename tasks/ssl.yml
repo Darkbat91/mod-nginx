@@ -8,8 +8,8 @@
   file:
     path: '/usr/share/nginx/certbot'
     state: directory
-    owner: '{{ flask_user }}'
-    group: '{{ flask_group }}'
+    owner: nginx
+    group: nginx
     mode: 0750
   when: auto_renew
 
