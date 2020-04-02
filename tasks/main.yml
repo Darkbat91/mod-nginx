@@ -39,16 +39,6 @@
     mode: '0640'
   notify: restart_nginx
 
-- name: Nginx | Config | Copy Http Redirect configuration
-  template:
-    src: etc_nginx_confd_httpredirect.conf
-    dest: /etc/nginx/conf.d/httpredirect.conf
-    owner: nginx
-    group: nginx
-    mode: '0640'
-  when: http_redirect == True
-  notify: restart_nginx
-
 - name: Nginx | Config | Copy client PKI config
   template:
     src: etc_nginx_confd_clientpki.conf
