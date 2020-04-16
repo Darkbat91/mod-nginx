@@ -1,4 +1,18 @@
-- name: Nginx | Config | Copy nginx.conf
+- name: Nginx | fluentd | update logging directory
+  file:
+    path: /var/log/nginx
+    state: directory
+    recurse: yes
+    owner: nginx
+    group: nginx
+
+- name: Suricata | fluentd | Add fluentd user to suricata
+  user: 
+    name: "{{ fluentd_user }}"
+    append: yes
+    groups: ["nginx"]
+
+- name: Nginx | fluentd | Copy nginx.conf
   copy:
     src: etc_tdagent_confd_nginx.conf
     dest: /etc/td-agent/conf.d/nginx.conf

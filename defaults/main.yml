@@ -41,3 +41,4 @@ ssl_packages:
   
 # Enables the tailing of the access and error logs for nginx
 fluentdreport: false
+fluentd_user: 'td-agent'
