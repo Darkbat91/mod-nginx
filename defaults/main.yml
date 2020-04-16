@@ -39,3 +39,5 @@ ssl_packages:
   - openssl
   - certbot
   
+# Enables the tailing of the access and error logs for nginx
+fluentdreport: false

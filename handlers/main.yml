@@ -1,5 +1,11 @@
-- name: NGINX | Handler | restart
+- name: NGINX | Handler | restart service
   service:
     name: nginx
     state: restarted
   listen: restart_nginx
+
+- name: NGINX | Handler | restart tdagent
+  service:
+    name: td-agent
+    state: restarted
+  listen: restart_fluentd

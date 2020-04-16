@@ -57,3 +57,6 @@
 
 - include: ssl.yml
   when: external_DNS != 'NONE' and TLS == True
+
+- include: fluentd.yml
+  when: fluentdreport
