@@ -6,7 +6,7 @@
     owner: nginx
     group: nginx
 
-- name: Suricata | fluentd | Add fluentd user to suricata
+- name: Nginx | fluentd | Add fluentd user to nginx
   user: 
     name: "{{ fluentd_user }}"
     append: yes
